@@ -1,15 +1,26 @@
 package com.example.myapplication;
 
-import androidx.appcompat.app.AppCompatActivity;
-
 import android.content.res.AssetManager;
+import android.os.Build;
 import android.os.Bundle;
+import android.os.StrictMode;
 import android.util.Log;
 import android.util.Xml;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
+
+import androidx.appcompat.app.AppCompatActivity;
+
 import org.xmlpull.v1.XmlPullParser;
+
+import java.io.BufferedReader;
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 
@@ -22,6 +33,7 @@ public class MainActivity extends AppCompatActivity {
     String procedure =new String();
     ArrayList prescriptionFormatList =new ArrayList();
     String prescription =new String();
+    InputStream data;
     private void initData(){
         info.add(11,"病情摘要");
         ListView listView = (ListView)findViewById(R.id.listViewAaa);
@@ -33,16 +45,16 @@ public class MainActivity extends AppCompatActivity {
 
 
 
-    private void getAssetsStream(String fileName){
-
+    private void parseXml(InputStream raw){
 
 
 
         AssetManager assetManager = getAssets();
-        InputStream data;
         XmlPullParser xmlPullParser = Xml.newPullParser();
         try {
-            data = assetManager.open(fileName);
+//            data = assetManager.open(fileName);
+            data = raw;
+//            System.out.println(assetManager.open(fileName));
             xmlPullParser.setInput(data,"utf-8");
             int eventType = xmlPullParser.getEventType();
             int nameCount = 0;
@@ -203,8 +215,69 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        getAssetsStream("sampleMR.xml");
-        initData();
+        if(Build.VERSION.SDK_INT>9){
+            StrictMode.ThreadPolicy policy=new StrictMode.ThreadPolicy.Builder().permitAll().build();
+            StrictMode.setThreadPolicy(policy);
+        }
+//        getAssetsStream("sampleMR.xml");
+
+//        System.out.println("AAAA");
+
+        try {
+            data = Get_HttpURLConnection.main();
+            parseXml(data);
+            initData();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+
+
+    }
+
+    public static class Get_HttpURLConnection {
+
+        private static HttpURLConnection get_connection;
+
+        public static InputStream main() throws IOException {
+
+            String url = "http://140.136.151.70/Project/Download/download.php";
+
+            try {
+                // We retrieve the contents of our webpage.
+                URL myurl = new URL(url);
+                get_connection = (HttpURLConnection) myurl.openConnection();
+                // Here we specify the connection type
+                get_connection.setRequestMethod("GET");
+                StringBuilder webpage_content;
+
+                try (BufferedReader webpage = new BufferedReader(
+                        new InputStreamReader(get_connection.getInputStream()))) {
+
+                    String webpage_line;
+                    webpage_content = new StringBuilder();
+
+                    while ((webpage_line = webpage.readLine()) != null) {
+
+                        webpage_content.append(webpage_line);
+                        webpage_content.append(System.lineSeparator());
+                    }
+                }
+
+                InputStream stream = new ByteArrayInputStream(webpage_content.toString().getBytes(StandardCharsets.UTF_8));
+//                System.out.println(webpage_content);
+
+
+                return stream;
+
+
+
+            } finally {
+                //Disconnect the connection
+                get_connection.disconnect();
+
+            }
+        }
     }
 
     @Override
@@ -213,3 +286,4 @@ public class MainActivity extends AppCompatActivity {
 
     }
 }
+
