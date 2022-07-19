@@ -1,7 +1,5 @@
 package com.example.myapplication;
 
-import android.content.res.AssetManager;
-import android.os.Build;
 import android.os.Bundle;
 import android.os.StrictMode;
 import android.util.Log;
@@ -27,17 +25,17 @@ import java.util.Arrays;
 public class MainActivity extends AppCompatActivity {
 
 
-    ArrayList info = new ArrayList();
-    ArrayList formatList = new ArrayList(Arrays.asList("姓名:","醫事機構:","醫師姓名:","醫事機構:","科別:"));
-    ArrayList procedureFormatList =new ArrayList();
-    String procedure =new String();
-    ArrayList prescriptionFormatList =new ArrayList();
-    String prescription =new String();
+    ArrayList<String> info = new ArrayList<>();
+    ArrayList<String> formatList = new ArrayList<>(Arrays.asList("姓名:","醫事機構:","醫師姓名:","醫事機構:","科別:"));
+    ArrayList<String> procedureFormatList = new ArrayList<>();
+    String procedure = "";
+    ArrayList<String> prescriptionFormatList = new ArrayList<>();
+    String prescription = "";
     InputStream data;
     private void initData(){
         info.add(11,"病情摘要");
         ListView listView = (ListView)findViewById(R.id.listViewAaa);
-        ArrayAdapter adapter = new ArrayAdapter<String>(this,android.R.layout.simple_list_item_1,info);
+        ArrayAdapter<String> adapter = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, info);
         listView.setAdapter(adapter);
     }
 
@@ -48,13 +46,9 @@ public class MainActivity extends AppCompatActivity {
     private void parseXml(InputStream raw){
 
 
-
-        AssetManager assetManager = getAssets();
         XmlPullParser xmlPullParser = Xml.newPullParser();
         try {
-//            data = assetManager.open(fileName);
             data = raw;
-//            System.out.println(assetManager.open(fileName));
             xmlPullParser.setInput(data,"utf-8");
             int eventType = xmlPullParser.getEventType();
             int nameCount = 0;
@@ -66,137 +60,142 @@ public class MainActivity extends AppCompatActivity {
             while (eventType!=XmlPullParser.END_DOCUMENT){
                 switch (eventType){
                     case XmlPullParser.START_TAG:
-                        if(xmlPullParser.getName().equals("recordTarget")){
-                        }
-                        else if(xmlPullParser.getName().equals("name")){
-                            if(nameCount<=4){
-                                String name = xmlPullParser.nextText();
-                                info.add(formatList.get(nameCount)+name);
-                                nameCount +=1;
-                            }
-                        }else if(xmlPullParser.getName().equals("birthTime")){
-                            String birthTime = xmlPullParser.getAttributeValue(null,"value");
-                            info.add("出生日期 : "+birthTime);
+                        switch (xmlPullParser.getName()) {
+                            case "recordTarget":
+                                break;
+                            case "name":
+                                if (nameCount <= 4) {
+                                    String name = xmlPullParser.nextText();
+                                    info.add(formatList.get(nameCount) + name);
+                                    nameCount += 1;
+                                }
+                                break;
+                            case "birthTime":
+                                String birthTime = xmlPullParser.getAttributeValue(null, "value");
+                                info.add("出生日期 : " + birthTime);
 
-                        }else if(xmlPullParser.getName().equals("effectiveTime")){
-                            if(effectiveTimeCount==0){
-                                String effectiveTime = xmlPullParser.getAttributeValue(null,"value");
-                                info.add("列印日期 : "+effectiveTime);
-                                effectiveTimeCount +=1;
-                            }else{
-                                String effectiveTime = xmlPullParser.getAttributeValue(null,"value");
-                                info.add("門診日期 : "+effectiveTime);
-                            }
+                                break;
+                            case "effectiveTime":
+                                String effectiveTime = xmlPullParser.getAttributeValue(null, "value");
+                                if (effectiveTimeCount == 0) {
+                                    info.add("列印日期 : " + effectiveTime);
+                                    effectiveTimeCount += 1;
+                                } else {
+                                    info.add("門診日期 : " + effectiveTime);
+                                }
 
-                        }else if(xmlPullParser.getName().equals("administrativeGenderCode")){
-                            String gender = xmlPullParser.getAttributeValue(null,"displayName");
+                                break;
+                            case "administrativeGenderCode":
+                                String gender = xmlPullParser.getAttributeValue(null, "displayName");
 //                            Log.e("data",gender);
-                            if(gender.equals("Male")){
-                                info.add("性別:男");
-                            }else{
-                                info.add("性別:女");
-                            }
-                        }else if(xmlPullParser.getName().equals("patient")){
-                            if(xmlPullParser.getAttributeValue(null,"classCode").equals("PSN")){
-                                xmlPullParser.nextTag();
-                                String id = xmlPullParser.getAttributeValue(null,"extension");
-                                info.add("身分證字號 : "+id);
-                            }
+                                if (gender.equals("Male")) {
+                                    info.add("性別:男");
+                                } else {
+                                    info.add("性別:女");
+                                }
+                                break;
+                            case "patient":
+                                if (xmlPullParser.getAttributeValue(null, "classCode").equals("PSN")) {
+                                    xmlPullParser.nextTag();
+                                    String id = xmlPullParser.getAttributeValue(null, "extension");
+                                    info.add("身分證字號 : " + id);
+                                }
 
-                        }else if(xmlPullParser.getName().equals("time")){
-                            String time = xmlPullParser.getAttributeValue(null,"value");
-                            info.add("醫事紀錄時間:"+time);
-                        }else if(xmlPullParser.getName().equals("title")){
-                            switch (xmlPullParser.nextText()){
-                                case "診斷":
-                                    String diagnosis = new String();
-                                    while(true){
-                                        xmlPullParser.nextTag();
-                                        if(xmlPullParser.getEventType() == XmlPullParser.END_TAG){
-                                            break;
-                                        }else if(xmlPullParser.getName().equals("paragraph")){
-                                            diagnosis += xmlPullParser.nextText();
-                                            diagnosis += "\n\n";
+                                break;
+                            case "time":
+                                String time = xmlPullParser.getAttributeValue(null, "value");
+                                info.add("醫事紀錄時間:" + time);
+                                break;
+                            case "title":
+                                switch (xmlPullParser.nextText()) {
+                                    case "診斷":
+                                        StringBuilder diagnosis = new StringBuilder();
+                                        while (true) {
+                                            xmlPullParser.nextTag();
+                                            if (xmlPullParser.getEventType() == XmlPullParser.END_TAG) {
+                                                break;
+                                            } else if (xmlPullParser.getName().equals("paragraph")) {
+                                                diagnosis.append(xmlPullParser.nextText());
+                                                diagnosis.append("\n\n");
+                                            }
                                         }
-                                    }
-                                    info.add("診斷:"+diagnosis);
-                                    break;
-                                case "主觀描述":
-                                    String subjective =new String();
-                                    while(true){
-                                        xmlPullParser.nextTag();
-                                        if(xmlPullParser.getEventType() == XmlPullParser.END_TAG){
-                                            break;
-                                        }else if(xmlPullParser.getName().equals("paragraph")){
-                                            subjective += xmlPullParser.nextText();
-                                            subjective += "\n\n";
+                                        info.add("診斷:" + diagnosis);
+                                        break;
+                                    case "主觀描述":
+                                        StringBuilder subjective = new StringBuilder();
+                                        while (true) {
+                                            xmlPullParser.nextTag();
+                                            if (xmlPullParser.getEventType() == XmlPullParser.END_TAG) {
+                                                break;
+                                            } else if (xmlPullParser.getName().equals("paragraph")) {
+                                                subjective.append(xmlPullParser.nextText());
+                                                subjective.append("\n\n");
+                                            }
                                         }
-                                    }
-                                    info.add("主觀描述:\n"+subjective);
-                                    break;
-                                case "客觀描述":
-                                    String Objective = new String();
-                                    while(true){
-                                        xmlPullParser.nextTag();
-                                        if(xmlPullParser.getEventType() == XmlPullParser.END_TAG){
-                                            break;
-                                        }else if(xmlPullParser.getName().equals("paragraph")){
-                                            Objective += xmlPullParser.nextText();
-                                            Objective += "\n\n";
+                                        info.add("主觀描述:\n" + subjective);
+                                        break;
+                                    case "客觀描述":
+                                        StringBuilder Objective = new StringBuilder();
+                                        while (true) {
+                                            xmlPullParser.nextTag();
+                                            if (xmlPullParser.getEventType() == XmlPullParser.END_TAG) {
+                                                break;
+                                            } else if (xmlPullParser.getName().equals("paragraph")) {
+                                                Objective.append(xmlPullParser.nextText());
+                                                Objective.append("\n\n");
+                                            }
                                         }
+                                        info.add("客觀描述:\n" + Objective);
+                                }
+                                break;
+                            case "thead":
+                                xmlPullParser.nextTag();
+                                xmlPullParser.nextTag();
+                                while (!xmlPullParser.getName().equals("tr")) {
+                                    String text = xmlPullParser.nextText();
+                                    if (formatListCount == 0) {
+                                        Log.e("Procedure", text);
+                                        procedureFormatList.add(text);
+                                    } else {
+                                        Log.e("Prescription", text);
+                                        prescriptionFormatList.add(text);
                                     }
-                                    info.add("客觀描述:\n"+Objective);
-                            }
-                        }
-                        else if(xmlPullParser.getName().equals("thead")){
-                            xmlPullParser.nextTag();
-                            xmlPullParser.nextTag();
-                            while(!xmlPullParser.getName().equals("tr")){
-                                if(formatListCount==0){
-                                    String text = new String(xmlPullParser.nextText());
-                                    Log.e("Procedure",text);
-                                    procedureFormatList.add(text);
-                                }else if(formatListCount ==1){
-                                    String text = new String(xmlPullParser.nextText());
-                                    Log.e("Prescription",text);
-                                    prescriptionFormatList.add(text);
+                                    xmlPullParser.nextTag();
+                                }
+                                formatListCount = 1;
+                                break;
+                            case "tbody":
+                                if (resultCount == 0) {
+                                    info.add("處置項目");
+                                } else {
+                                    info.add("處方");
                                 }
                                 xmlPullParser.nextTag();
-                            }
-                            formatListCount = 1;
-                        }
-                        else if(xmlPullParser.getName().equals("tbody")){
-                            if(resultCount == 0){
-                                info.add("處置項目");
-                            }else{
-                                info.add("處方");
-                            }
-                            xmlPullParser.nextTag();
-                            xmlPullParser.nextTag();
-                            while (!xmlPullParser.getName().equals("tr")){
-                                if(xmlPullParser.getName().equals("td")){
-                                    if(resultCount==0){
-                                        String text =new String(xmlPullParser.nextText());
-                                        Log.e("Procedure",text);
-                                        procedure += procedureFormatList.get(count1)+" : "+text +"\n";
-                                        count1+=1;
-                                    }else{
-
-                                        String text =new String(xmlPullParser.nextText());
-                                        prescription += prescriptionFormatList.get(count2)+" : "+text+"\n";
-                                        Log.e("Procedure",text);
-                                        count2+=1;
-                                    }
-
-                                }
                                 xmlPullParser.nextTag();
-                            }
-                            if(resultCount == 0){
-                                info.add(procedure);
-                            }else{
-                                info.add(prescription);
-                            }
-                            resultCount = 1;
+                                while (!xmlPullParser.getName().equals("tr")) {
+                                    if (xmlPullParser.getName().equals("td")) {
+                                        String text = xmlPullParser.nextText();
+                                        if (resultCount == 0) {
+                                            Log.e("Procedure", text);
+                                            procedure += procedureFormatList.get(count1) + " : " + text + "\n";
+                                            count1 += 1;
+                                        } else {
+
+                                            prescription += prescriptionFormatList.get(count2) + " : " + text + "\n";
+                                            Log.e("Procedure", text);
+                                            count2 += 1;
+                                        }
+
+                                    }
+                                    xmlPullParser.nextTag();
+                                }
+                                if (resultCount == 0) {
+                                    info.add(procedure);
+                                } else {
+                                    info.add(prescription);
+                                }
+                                resultCount = 1;
+                                break;
                         }
                         break;
                     case XmlPullParser.END_TAG:
@@ -215,13 +214,8 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        if(Build.VERSION.SDK_INT>9){
-            StrictMode.ThreadPolicy policy=new StrictMode.ThreadPolicy.Builder().permitAll().build();
-            StrictMode.setThreadPolicy(policy);
-        }
-//        getAssetsStream("sampleMR.xml");
-
-//        System.out.println("AAAA");
+        StrictMode.ThreadPolicy policy=new StrictMode.ThreadPolicy.Builder().permitAll().build();
+        StrictMode.setThreadPolicy(policy);
 
         try {
             data = Get_HttpURLConnection.main();
@@ -264,16 +258,14 @@ public class MainActivity extends AppCompatActivity {
                     }
                 }
 
-                InputStream stream = new ByteArrayInputStream(webpage_content.toString().getBytes(StandardCharsets.UTF_8));
-//                System.out.println(webpage_content);
 
 
-                return stream;
+                return new ByteArrayInputStream(webpage_content.toString().getBytes(StandardCharsets.UTF_8));
 
 
 
             } finally {
-                //Disconnect the connection
+                //Disconnect
                 get_connection.disconnect();
 
             }
